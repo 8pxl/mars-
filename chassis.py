@@ -2,7 +2,7 @@ from math import atan2, sqrt, pi,sin,cos
 import mainGraphics as mg
 import time
 
-x,y,currRotation = 300,730,0
+x,y,currRotation = 0,0,0
 
 class coordinate:
     def __init__(self, x, y):
@@ -110,7 +110,7 @@ def absoluteAngleToPoint(px,py):
 
 def moveToVel(target):
     global currRotation,x,y
-    lkp = 0.04
+    lkp = 0.1
     rkp = 0.08
 
     tx = target.getX
@@ -142,9 +142,13 @@ def moveToVel(target):
     return (lVel,rVel) 
 
 def moveTo(target,timeout):
+    speedLimit = 5
     for i in range(timeout):
         lVel,rVel = moveToVel(target) 
+        lVel = lVel if lVel < speedLimit else speedLimit
+        rVel = rVel if rVel < speedLimit else speedLimit
         odomStep(lVel,rVel)
+        print(lVel,rVel)
         time.sleep(0.01)
 
 def targetPoint(path, lookAhead, lineLookAhead, lineIndex):
