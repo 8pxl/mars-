@@ -3,6 +3,7 @@ from tkinter import *
 import time
 import tkinter
 import customtkinter as ct
+import chassis as c
 # from chassis import x,y
 
 robotFront = [0,0]
@@ -23,10 +24,10 @@ def drawLine(p1,p2,color,width = 1):
 
 
 identifiers = []
-a=[0,0]
+a=[0,0,0]
 
 def drawRobot(x,y,heading): 
-    global identifiers,a,robotFront
+    global identifiers,a,robotFront,numDiscs
     scaled = []
     points = [(x+49.5,y+49.5), (x-49.5,y+49.5), (x-49.5,y-49.5), (x+49.5,y-49.5)]
     # print(points)
@@ -36,13 +37,18 @@ def drawRobot(x,y,heading):
         scaled.append((px * cos(heading) - py * sin(heading) + x, py * cos(heading) + px * sin(heading) + y ))
     # w.create_oval(x-90,y-90,x+90,y+90)
     
-    for i in range(2):
+    for i in range(3):
         w.delete(a[i])
 
     a[0] = (w.create_polygon(scaled[0][0], scaled[0][1], scaled[1][0],scaled[1][1],scaled[2][0],scaled[2][1],scaled[3][0],scaled[3][1],fill = "#F45B69"))
     a[1] = (drawLine(scaled[3], scaled[3-1],"#48BEFF", 5))
     robotFront[0] = scaled[3]
     robotFront[1] = scaled[3-1]
+    
+    discColors = ["#FFFC99","#FFB951","#FC7135"]
+    if numDiscs >= 1:
+        # print(numDiscs-1)
+        a[2]=(drawDisc(c.x,c.y, False, discColors[numDiscs-1]))
     # for i in range(3,-1,-1): 
     #   if not len(identifiers) == 4:
     #     if i == 3:
@@ -76,12 +82,15 @@ def drawLines(path):
 discsIdentifiers = []
 discs = []
 
-def drawDisc(x,y):
+def drawDisc(x,y,field = True,color = "#FFFC99"):
     global discs
     x1, y1 = (x - 15.1525), (y - 15.1525)
     x2, y2 = (x + 15.1525), (y + 15.1525)
-    discsIdentifiers.append(w.create_oval(x1, y1, x2, y2, width = 0, fill="#FFFC99"))
-    discs.append((x,y))
+    if field:
+        discsIdentifiers.append(w.create_oval(x1, y1, x2, y2, width = 0, fill=color))
+        discs.append((x,y))
+    else:
+        return((w.create_oval(x1, y1, x2, y2, width = 0, fill=color)))
 
 def drawField():
     w.create_line(360.4, 653.5, 360.4, 782.2, width = 5, fill = "#B2DBBF")
@@ -130,6 +139,7 @@ def populateField():
     drawDisc(sx + 4 * ts + ts/2,sy + 3 * ts + ts/2)
 
 discsVisible = True
+numDiscs = 0
 
 def toggleDiscs(event):
     global discsVisible
@@ -142,7 +152,7 @@ def toggleDiscs(event):
         discsVisible = True
 
 def checkContact():
-    global discs,robotFront
+    global discs,robotFront,discsIdentifiers
     while True:
         points = robotFront
         x1,x2,y1,y2 = points[0][0], points[1][0], points[0][1], points[1][1]
@@ -153,12 +163,17 @@ def checkContact():
             dx = discs[i][0]
             dy = discs[i][1]
             distance = dist(midpoint,(dx,dy))
+
             if (distance < 20):
                 removeDisc(i)
+                discs[i] = (0,0)
+                discsIdentifiers[i] = 0
         time.sleep(0.01)
 
 def removeDisc(index):
+    global numDiscs,discsIdentifiers
     w.delete(discsIdentifiers[index])
+    numDiscs += 1
 
 def tile(x,y):
     sx = 100

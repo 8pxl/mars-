@@ -45,6 +45,7 @@ def sign(input):
 
 def drive(d,timeout):
     global x,y,currRotation
+    speedLimit = 5
     kp = 0.04
     dist = -d
     # dist = d
@@ -55,9 +56,10 @@ def drive(d,timeout):
     for i in range(timeout):
         error = float(dist) - (dist-(distToPoint(x,y,tx,ty)))
         vel = kp*error * sign(d)
+        vel = vel if vel < speedLimit else speedLimit
         odomStep(vel,vel)
         time.sleep(0.01)
-
+    
 def rotate(target,timeout):
     global x,y,currRotation
     kp = 0.04
@@ -100,6 +102,7 @@ def dirToSpin(target,currHeading):
 
 def absoluteAngleToPoint(px,py):
    global x,y
+#    print(x,y)
    try: 
     t = atan2(px-x,py-y)
    except:
@@ -136,19 +139,19 @@ def moveToVel(target):
 
     rotationVel = rotationError * rkp * dir 
 
-    lVel = linearVel - rotationVel 
-    rVel = linearVel + rotationVel 
+    lVel = (linearVel + (rotationVel if rotationVel < 0 else - rotationVel)) - rotationVel 
+    rVel = (linearVel + (rotationVel if rotationVel < 0 else - rotationVel)) + rotationVel 
     # print(lVel,rVel)
     return (lVel,rVel) 
 
 def moveTo(target,timeout):
-    speedLimit = 5
+    speedLimit = 3
     for i in range(timeout):
         lVel,rVel = moveToVel(target) 
         lVel = lVel if lVel < speedLimit else speedLimit
         rVel = rVel if rVel < speedLimit else speedLimit
         odomStep(lVel,rVel)
-        print(lVel,rVel)
+        # print(lVel,rVel)
         time.sleep(0.01)
 
 def targetPoint(path, lookAhead, lineLookAhead, lineIndex):
