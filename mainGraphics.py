@@ -121,13 +121,15 @@ def populateField():
     by = 782.2
     ts = 128.7
     for i in range(5):
-
-        drawDisc(sx + ts/2 + ts/2 * i, sy + ts/2 + ts/2*i)
-        drawDisc(bx - ts/2 - ts/2 * i, by - ts/2 - ts/2 * i)
+        if i == 2:
+            drawDisc(sx + ts/2 + ts/2 * i, sy + ts/2 + ts/2*i, color = "#FC7135")
+            drawDisc(bx - ts/2 - ts/2 * i, by - ts/2 - ts/2 * i,color = "#FC7135")
+        else:
+            drawDisc(sx + ts/2 + ts/2 * i, sy + ts/2 + ts/2*i)
+            drawDisc(bx - ts/2 - ts/2 * i, by - ts/2 - ts/2 * i)
 
     for i in range(3):
         offset = 98.395/2
-
         drawDisc(sx + 2*ts  - 15.1525 - offset*i, by - 2*ts -15.1525 - 7)
         drawDisc(sx + 2*ts + 15.1525 + 7 , by - 2*ts + 15.1525 + offset*i)
         drawDisc(sx + 5 * ts - 15.1525 - offset*i, sy + 2*ts + 15.1525+7)
@@ -135,8 +137,8 @@ def populateField():
         drawDisc(sx + 3 * ts + ts/2*i, sy + 4 * ts + ts/2*i)
         drawDisc(sx + 4 * ts - ts/2*i - ts/2 , sy + ts * 2 - ts/2*i + ts/2)
 
-    drawDisc(sx + 2 * ts - ts/2,sy + 2 * ts + ts/2)
-    drawDisc(sx + 4 * ts + ts/2,sy + 3 * ts + ts/2)
+    drawDisc(sx + 2 * ts - ts/2,sy + 2 * ts + ts/2, color = "#FC7135")
+    drawDisc(sx + 4 * ts + ts/2,sy + 3 * ts + ts/2,color = "#FC7135")
 
 discsVisible = True
 numDiscs = 0
@@ -164,35 +166,26 @@ def checkContact():
             dy = discs[i][1]
             distance = dist(midpoint,(dx,dy))
 
-            if (distance < 20):
-                removeDisc(i)
+            if (distance < 37):
+                if i == 29 or i == 28 or i == 4 or i == 5:
+                    removeDisc(i,3)
+                else:
+                    removeDisc(i,1)
                 discs[i] = (0,0)
                 discsIdentifiers[i] = 0
+
         time.sleep(0.01)
 
-def removeDisc(index):
+def removeDisc(index,num = 1):
     global numDiscs,discsIdentifiers
     w.delete(discsIdentifiers[index])
-    numDiscs += 1
+    numDiscs += num
 
 def tile(x,y):
     sx = 100
     sy = 10
     ts = 128.7
     return(sx + ts * x - ts/2,sy + y *ts -ts/2)
-# def drawDisc(event):
-#     x1, y1 = (event.x - 15.1525), (event.y - 15.1525)
-#     x2, y2 = (event.x + 15.1525), (event.y + 15.1525)
-#     discs.append((event.x,event.y))
-#     print(discs)
-#     w.create_oval(x1, y1, x2, y2, width = 0, fill="#FFFC99")
-
-
-# path = [(288, 792),(457, 599),(498, 380),(283, 330),(506, 188),(331, 136)]
-# p1 = [coordinate(288,792), coordinate(457,599), coordinate(498,380), coordinate(283,330), coordinate(506,188), coordinate(331,136)]
-
-# x,px = p1[0].getX, p1[0].getX 
-# y,py = p1[0].getY,p1[0].getY
 
 #graphics 
 
