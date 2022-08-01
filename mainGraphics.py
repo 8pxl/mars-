@@ -13,11 +13,11 @@ simulate = True
 # ct.set_appearance_mode("System")
 ct.set_default_color_theme("blue") 
 
-def drawPoint(x,y):
+def drawPoint(x,y,color = "#476042"):
     pythonGreen = "#476042"
     x1, y1 = (x - 5), (y - 5)
     x2, y2 = (x + 5), (y + 5)
-    return(w.create_oval(x1, y1, x2, y2, width = 0, fill=pythonGreen))
+    return(w.create_oval(x1, y1, x2, y2, width = 0, fill=color))
 
 def drawLine(p1,p2,color,width = 1):
     return(w.create_line(p1[0], p1[1], p2[0], p2[1],fill = color, width = width))
@@ -143,11 +143,15 @@ def populateField():
 discsVisible = True
 numDiscs = 0
 
-def toggleDiscs(event):
+def toggleDiscs():
+    global discs
+    global discsIdentifiers
     global discsVisible
     if(discsVisible):
         for i in range(len(getDiscs())):
             w.delete(getDiscs()[i])
+        discs = []
+        discsIdentifiers = []
         discsVisible = False
     else:
         populateField()

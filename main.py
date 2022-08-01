@@ -5,6 +5,8 @@ import mainGraphics as mg
 import chassis as c
 import pathGeneration as pg
 import flywheel as f
+import time
+
 
 c.x,c.y = mg.tile(1,3)
 # c.y += 7
@@ -24,7 +26,7 @@ goal2 = (sx + 3/4*ts, sy + 5*ts + 1/4*ts)
 
 # one =[c.coordinate(400,201), c.coordinate(357,261), c.coordinate(290,195), c.coordinate(229,136)]
 
-one = [c.coordinate(179,460), c.coordinate(243,456), c.coordinate(286,456), c.coordinate(335,457), c.coordinate(407,455), c.coordinate(434,424)]
+one = [c.coordinate(c.x,c.y), c.coordinate(243,456), c.coordinate(286,456), c.coordinate(335,457), c.coordinate(407,455), c.coordinate(434,424)]
 
 two = [c.coordinate(413,463), c.coordinate(487,518), c.coordinate(615,659),c.coordinate(615,659)]
 
@@ -37,29 +39,20 @@ five = [c.coordinate(527,395), c.coordinate(678,457), c.coordinate(692,394), c.c
 heart = [c.coordinate(160,318), c.coordinate(295,184), c.coordinate(452,297), c.coordinate(573,192), c.coordinate(714,316), c.coordinate(741,459), c.coordinate(588,595), c.coordinate(480,689), c.coordinate(325,592), c.coordinate(200,466), c.coordinate(156,327)]
 
 def chassisLoop():
-    c.moveToPurePursuit(one,20,2,50)
-    c.drive(100,90)
-    c.rotate(180-c.absoluteAngleToPoint(goal2[0],goal2[1]), 70)
-    f.shoot(3, goal, 10, 0.3)
-    c.rotate(10, 70)
-    c.drive(100, 90)
-    c.rotate(180-c.absoluteAngleToPoint(goal[0],goal[1]), 70)
-    f.shoot(3, goal, 10, 0.5)
-    c.rotate(330, 70)
-    c.drive(150, 90)
 
+    curve = c.bezier((c.x,c.y), (mg.tile(3,4)[0],mg.tile(3,4)[1]),45,45,c.currRotation,c.dtr(90))
+    c.createMotionProfileFromCurve(curve,0.1,0.5,0.5,100)
 
-    c.drive(100,90)
-    c.rotate(180-c.absoluteAngleToPoint(goal[0],goal[1]),70)
-    f.shoot(3,goal,20,0.5)
-    target = c.coordinate(mg.tile(2,2)[0] + ts/2, mg.tile(2,2)[1]+ts/2)
-    c.moveTo(target,100)
-    c.rotate(180-c.absoluteAngleToPoint(goal[0],goal[1]),70)
-    f.shoot(1,goal,20,0.5)
-    
-    c.drive(250,90)
-    c.rotate(180-c.absoluteAngleToPoint(goal[0],goal[1]),70)
-    f.shoot(3,goal,70,0.5)
+    # ix = c.x
+    # profile = c.createMotionProfileFromLine(((c.x,c.y), (c.x + 200,c.y)),0.1,0.5)
+    # print(profile)
+    # c.followMotionProfile(profile)
+    # time.sleep(0.8)
+    # mg.drawRobot(ix + 200,c.y,c.currRotation)
+    # c.moveToPosePID(mg.tile(3,4)[0],mg.tile(3,4)[1],45,300,50,100)
+    # c.moveTo(c.coordinate(413,463),100)
+    # c.rotate(90,100)
+    # c.moveToPurePursuit(heart,20,2,50)    
     
 
         
@@ -75,7 +68,7 @@ def something(event):
 
 def something2(event):
     if(mg.simulate):
-        mg.toggleDiscs
+        mg.toggleDiscs()
     else:
         pg.showPoints(event)
 
