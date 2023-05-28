@@ -19,15 +19,20 @@ def drawPoint(x,y,color = "#476042"):
     x2, y2 = (x + 5), (y + 5)
     return(w.create_oval(x1, y1, x2, y2, width = 0, fill=color))
 
-def drawLine(p1,p2,color,width = 1):
+def drawCricle(x,y,r):
+    x1, y1 = (x - r), (y - r)
+    x2, y2 = (x + r), (y + r)
+    return(w.create_oval(x1, y1, x2, y2, width = 1))
+
+def drawLine(p1,p2,color = "#FFFFFF",width = 1):
     return(w.create_line(p1[0], p1[1], p2[0], p2[1],fill = color, width = width))
 
 
 identifiers = []
-a=[0,0,0]
+robot=[0,0,0]
 
 def drawRobot(x,y,heading): 
-    global identifiers,a,robotFront,numDiscs
+    global identifiers,robot,robotFront,numDiscs
     scaled = []
     points = [(x+49.5,y+49.5), (x-49.5,y+49.5), (x-49.5,y-49.5), (x+49.5,y-49.5)]
     # print(points)
@@ -38,31 +43,19 @@ def drawRobot(x,y,heading):
     # w.create_oval(x-90,y-90,x+90,y+90)
     
     for i in range(3):
-        w.delete(a[i])
+        w.delete(robot[i])
 
-    a[0] = (w.create_polygon(scaled[0][0], scaled[0][1], scaled[1][0],scaled[1][1],scaled[2][0],scaled[2][1],scaled[3][0],scaled[3][1],fill = "#F45B69"))
-    a[1] = (drawLine(scaled[3], scaled[3-1],"#48BEFF", 5))
+    robot[0] = (w.create_polygon(scaled[0][0], scaled[0][1], scaled[1][0],scaled[1][1],scaled[2][0],scaled[2][1],scaled[3][0],scaled[3][1],fill = "#F45B69"))
+    robot[1] = (drawLine(scaled[3], scaled[3-1],"#48BEFF", 5))
     robotFront[0] = scaled[3]
     robotFront[1] = scaled[3-1]
     
     discColors = ["#FFFC99","#FFB951","#FC7135"]
     if numDiscs >= 1:
-        # print(numDiscs-1)
-        a[2]=(drawDisc(c.x,c.y, False, discColors[numDiscs-1]))
-    # for i in range(3,-1,-1): 
-    #   if not len(identifiers) == 4:
-    #     if i == 3:
-    #         identifiers.append(drawLine(scaled[i], scaled[i-1],"red"))
-    #     else:
-    #         identifiers.append(drawLine(scaled[i],scaled[i-1], "white"))
-    #   else:
-    #     # print(identifiers)
-    #     w.delete(identifiers[i])
-    #     identifiers.pop(i)
-    #     if i == 3:
-    #         identifiers.append(drawLine(scaled[i], scaled[i-1],"red"))
-    #     else:
-    #         identifiers.append(drawLine(scaled[i],scaled[i-1], "white"))
+        try:
+            robot[2] = (drawDisc(c.x,c.y, False, discColors[numDiscs-1]))
+        except:
+            robot[2] = (drawDisc(c.x,c.y, False, discColors[2]))
     
 
 # def deleteRobot():
@@ -170,7 +163,7 @@ def checkContact():
             dy = discs[i][1]
             distance = dist(midpoint,(dx,dy))
 
-            if (distance < 37):
+            if (distance < 37 and numDiscs < 3):
                 if i == 29 or i == 28 or i == 4 or i == 5:
                     removeDisc(i,3)
                 else:
@@ -204,7 +197,7 @@ canvas_height = 18*40 + 100
 master = Tk()
 master.title("g")
 w = Canvas(master, width=canvas_width, height=canvas_height,background = "#B2DBBF")
-editIcon = tkinter.PhotoImage(file = "robotics/vexRobotSimulator/assets/edit button.png")
+editIcon = tkinter.PhotoImage(file = "/Users/keijayhuang/Desktop/pypy/robotics/mars/assets/edit.png")
 button = ct.CTkButton(master=w, text = None, image = editIcon.subsample(4), fg_color = "#B2DBBF", width = 40,height = 40,command = toggleEdit)
 button.place(x=25, y=410)
 
@@ -229,8 +222,6 @@ for i in range(6):
         cx = 100 + i * 128.7
         cy = 782.2 - j * 128.7
         w.create_rectangle(cx,cy,cx+128.7,cy-128.7,fill = colors[j%2 - i%2],outline= "#F45B69")
-
-# w.create_rectangle(100 ,782.2 ,892 ,10,fill = "#305252") 
 
 for i in range(1,6):
     w.create_line(100,782.2 - 128.7*i, 100,782.2 - 128.7*i, fill = "#F45B69")

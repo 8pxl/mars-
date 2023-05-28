@@ -1,7 +1,4 @@
-from math import atan2, sqrt, pi,sin,cos, asin
-from numpy import arange
-
-import sympy
+from math import atan2, sqrt, pi,sin,cos
 import mainGraphics as mg
 import time
 from sympy import diff,symbols 
@@ -68,7 +65,7 @@ class bezier:
 
         m = bpy/bpx
 
-        return(atan2(1,m))
+        return(pi-atan2(1,m))
     
     def createLUT(self, resolution):
         points = []
@@ -76,7 +73,7 @@ class bezier:
         for i in range(1,resolution+1):
             points.append(self.solve(i/resolution))
             angles.append(self.tangentLineAngle(i/resolution))
-        return [points, angles]
+        return [points, angles, self.approximateLength([points, angles], resolution)]
 
     def approximateLength(self, lut, resolution):
         length = 0
@@ -85,16 +82,38 @@ class bezier:
             p1 = lut[0][i+1]
             length += distToPoint(p0[0],p0[1],p1[0],p1[1])
         return length
-
-
     
-def odomStep(dl,dr):
+def odomStep(dl,dr, justMath = False, pos = (0,0), rotation = 0):
     global x,y,currRotation
     #currHeading -> -180-180
-    offset = 25
-    deltaRotation = (dl-dr) / 50
+    offset = 24.75
+    deltaRotation = (dl-dr) / (2*offset)
+
+    if justMath:
+        
+        rotation += deltaRotation
+        
+        if deltaRotation == 0:
+            deltaY = cos(2*pi-rotation) * dr
+            deltaX = sin(2*pi-rotation) * dr
+
+        else:
+            r = dr/deltaRotation + offset
+
+            relativeY = 2*sin(deltaRotation/2) * r 
+
+            rotationOffset = rotation+deltaRotation/2
+            theta = pi/2
+            radius = relativeY
+            theta += rotationOffset
+            deltaX = radius*cos(theta)
+            deltaY = radius*sin(theta)
+
+        return(pos[0] - deltaX, pos[1] - deltaY,rotation)
+
     
     currRotation += deltaRotation
+    
     if deltaRotation == 0:
         deltaY = cos(2*pi-currRotation) * dr
         deltaX = sin(2*pi-currRotation) * dr
@@ -111,9 +130,12 @@ def odomStep(dl,dr):
         deltaX = radius*cos(theta)
         deltaY = radius*sin(theta)
     
+    
     x -= deltaX
     y -= deltaY
     mg.drawRobot(x,y,currRotation)
+
+# def reverseOdom(dx,dy,dtheta):
 
 def drive(d,timeout):
     global x,y,currRotation
@@ -134,7 +156,7 @@ def drive(d,timeout):
 
 def rotate(target,timeout):
     global x,y,currRotation
-    kp = 0.04
+    kp = 0.03
 
     for i in range(timeout):
         scaled = rtd(currRotation) if currRotation > 0 else rtd(currRotation) + 360
@@ -185,8 +207,8 @@ def absoluteAngleToPoint(px,py):
 
 def moveToVel(target):
     global currRotation,x,y
-    lkp = 0.1
-    rkp = 0.1
+    lkp = 0.01
+    rkp = 0.05
     krp = 1.2
     tx = target.getX
     ty = target.getY
@@ -212,6 +234,7 @@ def moveToVel(target):
 
     rotationVel = rotationError * rkp * dir 
 
+    # print(linearVel,rotationVel)
     lVel = (linearVel - abs(rotationVel) * krp) - rotationVel 
     rVel = (linearVel - abs(rotationVel) * krp) + rotationVel 
     return (lVel,rVel) 
@@ -220,7 +243,7 @@ def moveTo(target,timeout):
     speedLimit = 4
     for i in range(timeout):
         lVel,rVel = moveToVel(target) 
-        print(lVel,rVel)
+        # print(lVel,rVel)
         lVel = lVel if lVel < speedLimit else speedLimit
         rVel = rVel if rVel < speedLimit else speedLimit
         odomStep(lVel,rVel)
@@ -231,7 +254,7 @@ def targetPoint(path, lookAhead, lineLookAhead, lineIndex):
     global x
     global y
 
-    # farthestPoint = coordinate( path[lineLookAhead - 1].getX, path[lineLookAhead - 1].getY)
+    farthestPoint = coordinate( path[lineLookAhead - 1].getX, path[lineLookAhead - 1].getY)
     targetPoint   = coordinate(0,0) 
     closestDist = 1000000000 
 
@@ -239,7 +262,7 @@ def targetPoint(path, lookAhead, lineLookAhead, lineIndex):
     for i in range(lineIndex, a):
 
         farthestPoint = coordinate( path[a-1].getX, path[a - 1].getY)
-        # drawLine((x,y),(farthestPoint.getX, farthestPoint.getY))
+        # mg.drawLine((x,y),(farthestPoint.getX, farthestPoint.getY))
         # print(range(lineIndex, lineIndex+lineLookAhead if lineIndex+lineLookAhead < len(path) - lineIndex - 1 else len(path) - lineIndex - 1))
 
         x1 = path[i].getX
@@ -305,9 +328,7 @@ def targetPoint(path, lookAhead, lineLookAhead, lineIndex):
     
     return(targetPoint)
 
-
-
-robotPath = []
+# robotPath = []
 
 def moveToPurePursuit(path, lookAhead, lineLookAhead,finalTimeout):
     global px,py,x,y
@@ -317,13 +338,22 @@ def moveToPurePursuit(path, lookAhead, lineLookAhead,finalTimeout):
     # if (pointInCircle(path[lineIndex + 1], lookAhead)):
     #     lineIndex += 1 
 
+    a = 0
+    b = 0
     while(True):
+        
+        mg.w.delete(a)
+        mg.w.delete(b)
+
         target = targetPoint(path,lookAhead, lineLookAhead, lineIndex)
+        a = mg.drawCricle(x,y,lookAhead)
 
         if target == 1:
             lineIndex += 1
             print(lineIndex)
             target = targetPoint(path,lookAhead, lineLookAhead, lineIndex)
+        else:
+            b = mg.drawLine((x,y),(target.getX,target.getY))
         
         # if lineIndex == len(path)-2:
         #     break
@@ -339,6 +369,7 @@ def moveToPurePursuit(path, lookAhead, lineLookAhead,finalTimeout):
 
         # px,py = x,y
         # mg.drawPoint(target.getX,target.getY)
+
         time.sleep(0.01)
 
     # mg.drawLines(robotPath)
@@ -347,120 +378,257 @@ def moveToPurePursuit(path, lookAhead, lineLookAhead,finalTimeout):
 
 def moveToPosePID(tx,ty,finalHeading,initialBias,finalBias, timeout, initialHeading = currRotation):
     global x,y,currRotation
-    offset = 25
 
     curve = bezier((x,y),(tx,ty),initialBias,finalBias,currRotation,dtr(finalHeading))
 
     for i in range(100):
         mg.drawPoint(curve.solve(i/100)[0],curve.solve(i/100)[1])
     step = 1/timeout
-    vel = 0.1
-    aVel = 0.1
 
     for i in range(timeout):
         d = step*(i+1)
         # targetHeading = curve.tangentLineAngle(d)
         targetPos = curve.solve(d)
-        # print(targetPos)
         targetPos = coordinate(targetPos[0],targetPos[1])
         lVel,rVel = moveToVel(targetPos)
         odomStep(lVel,rVel)
-        time.sleep(0.01)
+        time.sleep(0.01)    
 
     moveTo(targetPos,1000)
     
-def linearVelocityProfileFromDist(dist,maxAccel,maxSpeed):
+def linearVelocityProfileFromDist(dist,maxAccel,maxSpeed,timeStep = 0.01):
 
     #in milliseconds
     profile = []
     vel = 0
+    distTraveled = 0
 
     # dist = distToPoint(path[0][0],path[0][1],path[1][0],path[1][1])
 
-    accelTime = int(maxSpeed / maxAccel)
-    accelDist = maxAccel * accelTime                
-    cruiseDist = dist - (2 * accelDist)
-    cruiseTime = int(cruiseDist / maxSpeed)
+    accelTime = int(maxSpeed // maxAccel)
+    # accelDist = maxAccel * accelTime   
+    # cruiseDist = dist - (2 * accelDist)
+    # cruiseTime = int(crui seDist // maxSpeed)
+
+    print((2 * (maxAccel * accelTime)))
+    print(dist)
+
+    if ((2 * (accelTime * maxAccel * accelTime)) > dist):
+        newMax = dist/(2 * maxAccel)
+        accelTime = int(newMax // maxAccel)
+        for i in range(0,accelTime):
+            vel += maxAccel
+            profile.append(vel)
+            distTraveled += vel
+                
+        for k in range(0,accelTime):
+            vel -= maxAccel
+            profile.append(vel)
+            distTraveled += vel
+        
+        return(profile)
 
     for i in range(0,accelTime):
-        profile.append((vel,vel))
         vel += maxAccel
+        profile.append(vel)
+        distTraveled += vel
+
+    # v*t = d
+    cruiseTime = int( (dist - 2 * (vel))/maxSpeed)
+    vel = maxSpeed
+
     for j in range(0,cruiseTime):
-        profile.append((vel,vel))
+        profile.append(vel)
+        distTraveled += vel
+
     for k in range(0,accelTime):
-        profile.append((vel,vel))
         vel -= maxAccel
+        profile.append(vel)
+        distTraveled += vel
+
+    # print(dist)
+    # print(distTraveled)
+    return(profile)
+
+def nonLinearVelocityProfile(lut, maxAccel, maxSpeed, angularAccel, resolution):
+
+    profile = []
+
+    profile = linearVelocityProfileFromDist(lut[2],maxAccel,maxSpeed)
+
+    timeStep = len(profile) / resolution
+    for i in range(resolution-1):
+        deltaRotation = lut[1][i+1] - lut[1][i]
+
+        b = int(timeStep * (i+1))
+        profile[b] = profile[b] - deltaRotation * angularAccel
+        # print(b)
+
     return(profile)
 
 
-def createMotionProfileFromCurve(curve, maxAccel, maxSpeed, maxAngular,resolution,rotationBias):
+
+def distancesToPose(curr, target, heading, currRotation):
+    dx = curr[0] - target[0]
+    deltaTheta = heading-currRotation
+    dt2 = deltaTheta/2
+    o = 25
+    # print(dt2)
+    # print(cos(heading + dt2 + pi/2))
+    dxryco = dx/((2*sin(dt2)) * cos(heading + dt2 + pi/2))
+
+    dr = deltaTheta * (dxryco - o)
+    dl = deltaTheta * (dxryco + o)
+
+    # dxryco = (curr[1] - target[1])/((2*sin(dt2)) * sin(heading + dt2 + pi/2))
+    # dr = deltaTheta * (dxryco - o)
+    # dl = deltaTheta * (dxryco + o)
+    # print(dr,dl)
+    # print((dl-dr)/50,deltaTheta)k
+    return(dl,dr)
+
+def otherDistancesToPose(curr, target, heading, currRotation):
+    dy = target[1]-curr[1] 
+    deltaTheta = heading-currRotation
+    dt2 = deltaTheta/2
+    o = 25
+    
+    if deltaTheta == 0:
+        dr = dy/1
+    else:
+        dxryco = dy/((2*sin(dt2)) * cos(heading  + dt2 + pi/2))
+
+        dr = deltaTheta * (dxryco - o)
+        dl = deltaTheta * (dxryco + o)
+
+    # dxryco = (curr[1] - target[1])/((2*sin(dt2)) * sin(heading + dt2 + pi/2))
+    # dr = deltaTheta * (dxryco - o)
+    # dl = deltaTheta * (dxryco + o)
+    # print((dl-dr)/50,deltaTheta)k
+    return(dr,dr)
+
+def createMotionProfile(curve, maxAccel, maxSpeed, angularAccel,resolution):
 
     for i in range(100):
         mg.drawPoint(curve.solve(i/100)[0],curve.solve(i/100)[1])
 
-    lkp = 0.1
-    rkp = 0.1
+
     motionProfile = []
-    
-    print(resolution)
+
     lut = curve.createLUT(resolution)
 
-    dist = curve.approximateLength(lut, resolution)
+    velocities = nonLinearVelocityProfile(lut, maxAccel, maxSpeed, angularAccel,resolution)
 
-    linearVelocityProfile = linearVelocityProfileFromDist(dist,maxAccel,maxSpeed)
-    #in milliseconds
-    totalTime = len(linearVelocityProfile)
-    timeIncrement = resolution/totalTime
-    for i in range(resolution-1):
-        # mg.drawRobot(x,y,pi-lut[1][i])
-        # time.sleep(0.01)  
-        targetPoint = lut[0][i+1]
-        targetHeading = lut[1][i+1]
-        vel = maxSpeed - (abs(lut[1][i+1] - lut[1][i])) * rotationBias
+    #in milliseconds    
+    # timeStep = len(velocities) / 
+    cx,cy, = x,y
+    rotation = currRotation
+    # for i in range(resolution-1):
+    for i in range(resolution):
+        # b = (i+1)/len(velocities)
+        # print(b)  
+        targetPoint = curve.solve(b)
+        targetHeading = curve.tangentLineAngle(b)
+
+        dl,dr = distancesToPose((cx,cy), targetPoint, targetHeading, rotation)
+        cx,cy,rotation = odomStep(dl,dr, True,(cx,cy),rotation)
 
 
-        motionProfile.append()
-        # print(maxAllowableVelocity)   
+        motionProfile.append((lv-a, rv-a))
+
     return(motionProfile)
 
-def velocitesToPose(target,heading):
-    global x,y,currRotation
-    #currHeading -> -180-180
-    offset = 25
+def motionProfileTest(curve,resolution):
+    lut = curve.createLUT(resolution)
+    profile = []
+    # cx,cy = lut[0][0]
+    cx,cy, = x,y
+    # rotation = lut[1][0]
+    rotation = currRotation
+    for i in range(resolution - 1):
+        print(x,y,currRotation)
+        print(cx,cy)
+        targetPoint = lut[0][i+1]
+        targetHeading = lut[1][i+1]
+        dl,dr = distancesToPose((cx,cy), targetPoint, targetHeading, rotation)
+        cx,cy,rotation = odomStep(dl,dr, True,(cx,cy),rotation)
+        profile.append((dl,dr))
+    print(len(profile))
+    return(profile) 
 
-    deltaRotation = heading-currRotation
-    # deltaRotation = (dl-dr) / 50
-    
-    if deltaRotation == 0:
-        deltaY = cos(2*pi-currRotation) * dr
-        deltaX = sin(2*pi-currRotation) * dr
-
-    else:
-        r = dr/deltaRotation + offset
-
-        relativeY = 2*sin(deltaRotation/2) * r 
-
-        rotationOffset = currRotation+deltaRotation/2
-        theta = pi/2
-        radius = relativeY
-        theta += rotationOffset
-        deltaX = radius*cos(theta)
-        deltaY = radius*sin(theta)
-    
-    x -= deltaX
-    y -= deltaY
 
 def followMotionProfile(profile):
     for i in range(len(profile)):
-        odomStep(profile[i][0],profile[i][1])
-        time.sleep(0.001)
+        # odomStep(profile[i][0],profile[i][1])
+        odomStep(profile[i],profile[i])
+        time.sleep(0.01)
 
+def fakeFollowCurve(curve,reso):
+    global x,y,currRotation
+    lut = curve.createLUT(reso)
+    for i in range(100):
+        mg.drawPoint(curve.solve(i/100)[0],curve.solve(i/100)[1])
+    for i in range(reso-1):
+        mg.drawRobot(lut[0][i][0],lut[0][i][1],lut[1][i])
+        x = lut[0][i][0]
+        y = lut[0][i][1]
+        currRotation = lut[1][i]
+        time.sleep(0.01)
+
+    # x = lut[0][reso-1][0]
+    # y = lut[0][reso-1][1]
 # path = [(288, 792),(457, 599),(498, 380),(283, 330),(506, 188),(331, 136)]
 # p1 = [coordinate(288,792), coordinate(457,599), coordinate(498,380), coordinate(283,330), coordinate(506,188), coordinate(331,136)]
 
 # x,px = p1[0].getX, p1[0].getX 
 # y,py = p1[0].getY,p1[0].getY
 
- 
+    
+def arcTurn(radius, end, timeout):  
+    global currRotation,x
+
+    mg.w.create_oval(x + radius + radius,y - radius,x,y + radius)
+    offset = 24.75
+    theta = end - currRotation
+    s = radius * theta
+    sl = (radius + offset) * theta
+    sr = (radius - offset) * theta
+    ratio = sl/sr   
+
+    velProfile = linearVelocityProfileFromDist(s,.1,2)
+
+    for vel in velProfile:
+        dr = (2 * vel) / (ratio+1)
+        dl = ratio * dr
+        
+        odomStep(dl,dr)
+        time.sleep(0.01)
 
 
+def rArcTurn(radius, end, timeout):  
+    global currRotation,x
+
+    mg.w.create_oval(x + radius + radius,y - radius,x,y + radius)
+    offset = 24.75
+    theta = end - currRotation
+    s = radius * theta
+    kp = 3
+    sl = (radius + offset) * theta
+    sr = (radius - offset) * theta
+    ratio = sl/sr   
+    max = 3.1
+
+    for i in range(timeout):
+
+        rotationError = minError(end,currRotation)
+
+        vel = kp * rotationError
+        # print(vel)
+        if (vel >=max):
+            vel = max
+
+        dr = (2 * vel) / (ratio+1)
+        dl = ratio * dr
+        
+        odomStep(dl,dr)
+        time.sleep(0.01)

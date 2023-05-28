@@ -10,7 +10,6 @@ a = [0]
 def moveDisc(d,angle):
     global discX,discY,a
     mg.w.delete(a[0])
-    #currHeading -> -180-180
 
     deltaY = cos(2*pi-angle) * d
     deltaX = sin(2*pi-angle) * d
@@ -40,8 +39,7 @@ def move(goal,timeout,kp):
 
 def shoot(num,goal,timeout,kp):
     for i in range(num):
-        disc = threading.Thread(target = move(goal,timeout,kp))
-        disc.start()
+        move(goal,timeout,kp)
         time.sleep(0.02)
 
 
